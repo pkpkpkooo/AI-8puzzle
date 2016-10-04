@@ -5,7 +5,8 @@
 #include <iostream>
 #include <list>
 #include <stack>
-//#define _CRT_CECURE_NO_WARNINGS
+#include <vector>
+#define _CRT_CECURE_NO_WARNINGS
 using namespace std;
 
 //퍼즐의 0의 위치 변수
@@ -47,6 +48,13 @@ void init_puzzle(puzzle *p, FILE *f) {
 	}
 }
 
+//풀이과정 출력함수
+void print_answer(vector <puzzle> sol) {
+	for (int i = 0; i < sol.size(); i++) {
+		print_puzzle(sol[i]);
+		cout << endl;
+	}
+}
 //hamming 함수
 int hamming(puzzle a, puzzle b) {
 	int point = 0;
@@ -86,6 +94,7 @@ void make_nodes(puzzle* p) {
 		}
 	}
 	parent = p->parent;
+	isNode = true;
 	if (p->zp.i > 0) {	//상방향으로 0을 이동할 수 있는지 체크
 		memcpy(tmp.panel, p->panel, sizeof(int) * 9);	//tmp의 panel로 값을 복사한 후 0의 위치를 왼쪽으로이동한다
 		tmp.panel[p->zp.i][p->zp.j] = p->panel[p->zp.i - 1][p->zp.j];
@@ -107,6 +116,7 @@ void make_nodes(puzzle* p) {
 		}
 	}
 	parent = p->parent;
+	isNode = true;
 	if (p->zp.j < 2) {	//우방향으로 0을 이동할 수 있는지 체크
 		memcpy(tmp.panel, p->panel, sizeof(int) * 9);	//tmp의 panel로 값을 복사한 후 0의 위치를 왼쪽으로이동한다
 		tmp.panel[p->zp.i][p->zp.j] = p->panel[p->zp.i][p->zp.j + 1];
@@ -128,6 +138,7 @@ void make_nodes(puzzle* p) {
 		}
 	}
 	parent = p->parent;
+	isNode = true;
 	if (p->zp.i < 2) {	//하방향으로 0을 이동할 수 있는지 체크
 		memcpy(tmp.panel, p->panel, sizeof(int) * 9);	//tmp의 panel로 값을 복사한 후 0의 위치를 왼쪽으로이동한다
 		tmp.panel[p->zp.i][p->zp.j] = p->panel[p->zp.i + 1][p->zp.j];
@@ -150,41 +161,58 @@ void make_nodes(puzzle* p) {
 	}
 }
 
-//깊이우선탐색
+//깊이우선 탐색
 void DFS(puzzle start, puzzle goal) {
+	cout << "start DFS" << endl;
 	stack<puzzle> OPEN;
 	OPEN.push(start);
 	while (OPEN.size() > 0) {
 		if (OPEN.top().child.size() == 0)
 			make_nodes(&OPEN.top());
 		if (hamming(OPEN.top(), goal) < 8) {	//hamming의 결과 point가 8보다 작으면(goal과 일치하지 않으면) 다음노드를 OPEN에 push
-			if (OPEN.size() < 5) {	//깊이를 5로 제한한다.
+			if (OPEN.size() < 6) {	//깊이를 5로 제한한다.
 				OPEN.push(OPEN.top().child.front());
 				print_puzzle(OPEN.top());
 				cout << endl;
-			}
-			else {
+			}else {
 				do {
 					OPEN.top().parent->child.pop_front(); //스택에 push한 노드는 child리스트에서 제거한다.
 					OPEN.pop();	//깊이가 5에 도달하면 스택을 pop한다
 				} while (OPEN.top().child.size() == 0);
-
-				/*				if (OPEN.top().child.size() == 0) {	//pop한 후 현재의 top가 가진 child노드가 없으면 한번 더 pop한다.
-				OPEN.top().parent->child.pop_front();
-				OPEN.pop();
-				}*/
 			}
 		}
 		else {	//정답을 찾을경우
 			cout << "정답을 찾았습니다" << endl;
-			print_puzzle(OPEN.top());
+			vector<puzzle> sol;
+			while(OPEN.size() > 0) { //OPEN에 있는 퍼즐목록을 역순으로 list에 삽입
+				sol.push_back(OPEN.top());
+				OPEN.pop();
+			}
+			reverse(sol.begin(), sol.end());
+			print_answer(sol);
+			return;
 		}
 		char a;
 		//scanf_s("%c",&a);
 	}
-
+	cout << "답을 찾지 못하였습니다." << endl;
 }
 
+//너비우선 탐색
+void BFS() {
+}
+
+//언덕오르기 탐색
+void HillClimbing(){
+}
+
+//최적우선 탐색
+void BestFirstSearch(){
+}
+
+//A* 탐색
+void AStar(){
+}
 int main(int argc, char* argv[])
 {
 	FILE *in;
