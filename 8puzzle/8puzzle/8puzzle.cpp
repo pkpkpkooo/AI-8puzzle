@@ -6,9 +6,11 @@
 #include <list>
 #include <stack>
 #include <vector>
+#include <time.h>
 #define _CRT_CECURE_NO_WARNINGS
 using namespace std;
-
+time_t start_t;
+time_t end_t;
 //퍼즐의 0의 위치 변수
 struct zero_position {
 	int i;
@@ -23,6 +25,7 @@ struct puzzle {
 
 //퍼즐출력함수
 void print_puzzle(puzzle p) {
+	cout << end_t - start_t << " 초 걸렸습니다." << endl;
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
 			cout << p.panel[i][j] << " ";
@@ -164,17 +167,18 @@ void make_nodes(puzzle* p) {
 
 //깊이우선 탐색
 void DFS(puzzle start, puzzle goal) {
+	start_t = time(NULL);
+	end_t = time(NULL);
 	cout << "start DFS" << endl;
 	stack<puzzle> OPEN;
 	OPEN.push(start);
-	while (OPEN.size() > 0) {
+	while (OPEN.size() > 0 && end_t - start_t < 5) {
+		end_t = time(NULL);
 		if (OPEN.top().child.size() == 0)
 			make_nodes(&OPEN.top());
 		if (hamming(OPEN.top(), goal) < 8) {	//hamming의 결과 point가 8보다 작으면(goal과 일치하지 않으면) 다음노드를 OPEN에 push
 			if (OPEN.size() < 6) {	//깊이를 5로 제한한다.
 				OPEN.push(OPEN.top().child.front());
-				//print_puzzle(OPEN.top());
-				//cout << endl;
 			}else {
 				do {
 					OPEN.top().parent->child.pop_front(); //스택에 push한 노드는 child리스트에서 제거한다.
@@ -183,7 +187,6 @@ void DFS(puzzle start, puzzle goal) {
 			}
 		}
 		else {	//정답을 찾을경우
-			
 			vector<puzzle> sol;
 			while(OPEN.size() > 0) { //OPEN에 있는 퍼즐목록을 역순으로 list에 삽입
 				sol.push_back(OPEN.top());
@@ -193,20 +196,21 @@ void DFS(puzzle start, puzzle goal) {
 			print_answer(sol);
 			return;
 		}
-		char a;
-		//scanf_s("%c",&a);
 	}
-	cout << "답을 찾지 못하였습니다." << endl;
+	cout << "답을 찾지 못하였습니다. 걸린시간 : " << end_t - start_t  << " 초"<< endl;
 }
 
 //너비우선 탐색
 void BFS(puzzle start, puzzle goal) {
+	start_t = time(NULL);
+	end_t = time(NULL);
 	cout << "start BFS" << endl;
 	list<puzzle> OPEN;
 	list<puzzle> CLOSE;
 	OPEN.push_back(start);
 
-	while(OPEN.size() > 0){
+	while(OPEN.size() > 0 && end_t - start_t < 5 ){	//OPEN에 더이상 노드가 없거나, 노드의 갯수가 천개가 넘어가면 종료
+		end_t = time(NULL);
 		if (hamming(OPEN.front(), goal) < 8) {	//OPEN의 가장 앞에 있는 노드를 목표와 비교해서 일치하지 않으면 
 			CLOSE.push_back(OPEN.front());		//OPEN의 첫번쨰 노드를 CLOSE로 복사하고 pop한다
 			OPEN.pop_front();	
@@ -215,9 +219,7 @@ void BFS(puzzle start, puzzle goal) {
 			for (it = CLOSE.back().child.begin(); it != CLOSE.back().child.end(); it++) {
 				OPEN.push_back(*it);
 			}
-			
-		}
-		else {
+		}else {
 			vector<puzzle> sol;
 			puzzle *tmp = &OPEN.front();
 			do {
@@ -228,8 +230,8 @@ void BFS(puzzle start, puzzle goal) {
 			print_answer(sol);
 			return;
 		}
-
 	}
+	cout << "답을 찾지 못하였습니다. 걸린시간 : " << end_t - start_t << " 초" << endl;
 }
 
 //언덕오르기 탐색
@@ -272,7 +274,7 @@ int main(int argc, char* argv[])
 	start.parent = NULL;
 
 	DFS(start, goal);
-	BFS(start, goal);
+	//BFS(start, goal);
 
 
 
