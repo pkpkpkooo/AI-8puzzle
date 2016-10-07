@@ -50,6 +50,7 @@ void init_puzzle(puzzle *p, FILE *f) {
 
 //풀이과정 출력함수
 void print_answer(vector <puzzle> sol) {
+	cout << "정답을 찾았습니다" << endl;
 	for (int i = 0; i < sol.size(); i++) {
 		print_puzzle(sol[i]);
 		cout << endl;
@@ -172,8 +173,8 @@ void DFS(puzzle start, puzzle goal) {
 		if (hamming(OPEN.top(), goal) < 8) {	//hamming의 결과 point가 8보다 작으면(goal과 일치하지 않으면) 다음노드를 OPEN에 push
 			if (OPEN.size() < 6) {	//깊이를 5로 제한한다.
 				OPEN.push(OPEN.top().child.front());
-				print_puzzle(OPEN.top());
-				cout << endl;
+				//print_puzzle(OPEN.top());
+				//cout << endl;
 			}else {
 				do {
 					OPEN.top().parent->child.pop_front(); //스택에 push한 노드는 child리스트에서 제거한다.
@@ -182,7 +183,7 @@ void DFS(puzzle start, puzzle goal) {
 			}
 		}
 		else {	//정답을 찾을경우
-			cout << "정답을 찾았습니다" << endl;
+			
 			vector<puzzle> sol;
 			while(OPEN.size() > 0) { //OPEN에 있는 퍼즐목록을 역순으로 list에 삽입
 				sol.push_back(OPEN.top());
@@ -199,19 +200,49 @@ void DFS(puzzle start, puzzle goal) {
 }
 
 //너비우선 탐색
-void BFS() {
+void BFS(puzzle start, puzzle goal) {
+	cout << "start BFS" << endl;
+	list<puzzle> OPEN;
+	list<puzzle> CLOSE;
+	OPEN.push_back(start);
+
+	while(OPEN.size() > 0){
+		if (hamming(OPEN.front(), goal) < 8) {	//OPEN의 가장 앞에 있는 노드를 목표와 비교해서 일치하지 않으면 
+			CLOSE.push_back(OPEN.front());		//OPEN의 첫번쨰 노드를 CLOSE로 복사하고 pop한다
+			OPEN.pop_front();	
+			make_nodes(&CLOSE.back());			//CLOSE의 마지막 노드에게 자식노드를 만들어준다
+			list<puzzle>::iterator it;
+			for (it = CLOSE.back().child.begin(); it != CLOSE.back().child.end(); it++) {
+				OPEN.push_back(*it);
+			}
+			
+		}
+		else {
+			vector<puzzle> sol;
+			puzzle *tmp = &OPEN.front();
+			do {
+				sol.push_back(*tmp);
+				tmp = tmp->parent;
+			} while (tmp != NULL);
+			reverse(sol.begin(), sol.end());
+			print_answer(sol);
+			return;
+		}
+
+	}
 }
 
 //언덕오르기 탐색
-void HillClimbing(){
+void HillClimbing(puzzle start, puzzle goal){
 }
 
 //최적우선 탐색
-void BestFirstSearch(){
+void BestFirstSearch(puzzle start, puzzle goal){
 }
 
 //A* 탐색
-void AStar(){
+void AStar(puzzle start, puzzle goal){
+
 }
 int main(int argc, char* argv[])
 {
@@ -241,7 +272,7 @@ int main(int argc, char* argv[])
 	start.parent = NULL;
 
 	DFS(start, goal);
-
+	BFS(start, goal);
 
 
 
