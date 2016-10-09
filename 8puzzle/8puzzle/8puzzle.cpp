@@ -17,6 +17,7 @@ struct zero_position {
 	int j;
 };
 struct puzzle {
+	int evalue;
 	int panel[3][3];
 	zero_position zp;
 	puzzle *parent;
@@ -25,7 +26,7 @@ struct puzzle {
 
 //퍼즐출력함수
 void print_puzzle(puzzle p) {
-	cout << end_t - start_t << " 초 걸렸습니다." << endl;
+	
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
 			cout << p.panel[i][j] << " ";
@@ -54,6 +55,7 @@ void init_puzzle(puzzle *p, FILE *f) {
 //풀이과정 출력함수
 void print_answer(vector <puzzle> sol) {
 	cout << "정답을 찾았습니다" << endl;
+	cout << end_t - start_t << " 초 걸렸습니다." << endl;
 	for (int i = 0; i < sol.size(); i++) {
 		print_puzzle(sol[i]);
 		cout << endl;
@@ -235,7 +237,41 @@ void BFS(puzzle start, puzzle goal) {
 }
 
 //언덕오르기 탐색
-void HillClimbing(puzzle start, puzzle goal){
+void HillClimbing(puzzle start, puzzle goal, int ef(puzzle a, puzzle b)){
+	start_t = time(NULL);
+	end_t = time(NULL);
+	cout << "start Hill climbing" << endl;
+	list<puzzle> OPEN;
+	list<puzzle> CLOSE;
+	OPEN.push_back(start);
+
+	while(OPEN.size() > 0  && end_t - start_t < 5){
+		CLOSE.push_back(OPEN.front());
+		make_nodes(&CLOSE.back());
+		if(CLOSE.back().child.size() > 0){	//CLOSE에 들어간 원소에 child가 존재하면
+			list<puzzle>::iterator it;
+			for(it = CLOSE.back().child.begin() ; it != CLOSE.back().child.end(); it++){
+				if(ef(*it, goal) < 8){
+					it->evalue = ef(*it, goal);
+				}else{
+					vector<puzzle> sol;
+					puzzle *tmp = &*it;
+					do {
+						sol.push_back(*tmp);
+						tmp = tmp->parent;
+					} while (tmp != NULL);
+					reverse(sol.begin(), sol.end());
+					print_answer(sol);
+					return;
+				}
+			}
+			CLOSE.back().child.sort(puzzle().evalue);
+		}
+	
+	}
+
+
+
 }
 
 //최적우선 탐색
