@@ -1,12 +1,12 @@
 // 8puzzle.cpp : 콘솔 응용 프로그램에 대한 진입점을 정의합니다.
 //
-
 //#include "stdafx.h"
 #include <iostream>
 #include <list>
 #include <stack>
 #include <vector>
 #include <time.h>
+#include <algorithm>
 #define _CRT_CECURE_NO_WARNINGS
 using namespace std;
 time_t start_t;
@@ -54,11 +54,13 @@ void init_puzzle(puzzle *p, FILE *f) {
 
 //풀이과정 출력함수
 void print_answer(vector <puzzle> sol) {
+	end_t = clock();
 	cout << "정답을 찾았습니다" << endl;
-	cout << end_t - start_t << " 초 걸렸습니다." << endl;
-	for (int i = 0; i < sol.size(); i++) {
+	//cout << (float)(end_t - start_t) / (CLOCKS_PER_SEC) << " 초 걸렸습니다." << endl;
+	printf("%f 초 걸렸습니다.\n", (float)(end_t - start_t) / (CLOCKS_PER_SEC));
+	for (unsigned int i = 0; i < sol.size(); i++) {
 		print_puzzle(sol[i]);
-		cout << endl;
+		std::cout << endl;
 	}
 }
 //hamming 함수
@@ -169,13 +171,11 @@ void make_nodes(puzzle* p) {
 
 //깊이우선 탐색
 void DFS(puzzle start, puzzle goal) {
-	start_t = time(NULL);
-	end_t = time(NULL);
+	start_t = clock();
 	cout << "start DFS" << endl;
 	stack<puzzle> OPEN;
 	OPEN.push(start);
 	while (OPEN.size() > 0 && end_t - start_t < 5) {
-		end_t = time(NULL);
 		if (OPEN.top().child.size() == 0)
 			make_nodes(&OPEN.top());
 		if (hamming(OPEN.top(), goal) < 8) {	//hamming의 결과 point가 8보다 작으면(goal과 일치하지 않으면) 다음노드를 OPEN에 push
@@ -204,15 +204,14 @@ void DFS(puzzle start, puzzle goal) {
 
 //너비우선 탐색
 void BFS(puzzle start, puzzle goal) {
-	start_t = time(NULL);
-	end_t = time(NULL);
+	start_t = clock();
 	cout << "start BFS" << endl;
 	list<puzzle> OPEN;
 	list<puzzle> CLOSE;
 	OPEN.push_back(start);
 
 	while(OPEN.size() > 0 && end_t - start_t < 5 ){	//OPEN에 더이상 노드가 없거나, 노드의 갯수가 천개가 넘어가면 종료
-		end_t = time(NULL);
+		
 		if (hamming(OPEN.front(), goal) < 8) {	//OPEN의 가장 앞에 있는 노드를 목표와 비교해서 일치하지 않으면 
 			CLOSE.push_back(OPEN.front());		//OPEN의 첫번쨰 노드를 CLOSE로 복사하고 pop한다
 			OPEN.pop_front();	
@@ -236,10 +235,12 @@ void BFS(puzzle start, puzzle goal) {
 	cout << "답을 찾지 못하였습니다. 걸린시간 : " << end_t - start_t << " 초" << endl;
 }
 
+bool pred(puzzle a, puzzle b) { return  a.evalue < b.evalue ? true : false; }
+
 //언덕오르기 탐색
 void HillClimbing(puzzle start, puzzle goal, int ef(puzzle a, puzzle b)){
-	start_t = time(NULL);
-	end_t = time(NULL);
+	start_t = clock();
+
 	cout << "start Hill climbing" << endl;
 	list<puzzle> OPEN;
 	list<puzzle> CLOSE;
@@ -248,12 +249,15 @@ void HillClimbing(puzzle start, puzzle goal, int ef(puzzle a, puzzle b)){
 	while(OPEN.size() > 0  && end_t - start_t < 5){
 		CLOSE.push_back(OPEN.front());
 		make_nodes(&CLOSE.back());
+		OPEN.pop_front();
+
 		if(CLOSE.back().child.size() > 0){	//CLOSE에 들어간 원소에 child가 존재하면
+
 			list<puzzle>::iterator it;
-			for(it = CLOSE.back().child.begin() ; it != CLOSE.back().child.end(); it++){
-				if(ef(*it, goal) < 8){
-					it->evalue = ef(*it, goal);
-				}else{
+			for(it = CLOSE.back().child.begin() ; it != CLOSE.back().child.end(); it++){	//각 child의 평가함수점수를 구한다.
+				if(ef(*it, goal) < 8) {		//평가함수의 점수가 8미만이면 저장함
+					it->evalue = ef(*it, goal);	
+				} else {					//평가함수의 점수가 8이상이면 정답
 					vector<puzzle> sol;
 					puzzle *tmp = &*it;
 					do {
@@ -265,12 +269,13 @@ void HillClimbing(puzzle start, puzzle goal, int ef(puzzle a, puzzle b)){
 					return;
 				}
 			}
-			CLOSE.back().child.sort(puzzle().evalue);
+			CLOSE.back().child.sort(pred);	//child들을 평가함수의 점수기준 오름차순으로 정렬
+			for(it=CLOSE.back().child.begin(); it != CLOSE.back().child.end(); it++){		//child들을 OPEN의 앞쪽에 삽입
+				OPEN.push_front(*it);
+			}
 		}
 	
 	}
-
-
 
 }
 
@@ -282,6 +287,7 @@ void BestFirstSearch(puzzle start, puzzle goal){
 void AStar(puzzle start, puzzle goal){
 
 }
+
 int main(int argc, char* argv[])
 {
 	FILE *in;
@@ -291,12 +297,12 @@ int main(int argc, char* argv[])
 
 	if (in = fopen("in.txt", "r"));	//입력값, 목표값 읽어오기
 	else {
-		printf("file open error in in.txt\n");
+		cout <<"file open error in in.txt" << endl;
 		return -1;
 	}
 	if (g = fopen("g.txt", "r"));
 	else {
-		printf("file open error in g.txt\n");
+		cout << "file open error in g.txt" << endl;
 		return -1;
 	}
 
@@ -310,8 +316,8 @@ int main(int argc, char* argv[])
 	start.parent = NULL;
 
 	DFS(start, goal);
-	//BFS(start, goal);
-
+	BFS(start, goal);
+	HillClimbing(start, goal, hamming);
 
 
 	fclose(in);
