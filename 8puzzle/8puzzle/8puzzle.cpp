@@ -180,18 +180,18 @@ void DFS(puzzle start, puzzle goal) {
 	stack<puzzle> OPEN;
 	OPEN.push(start);
 	do{
-		//end_t = clock();
+		//
 		if (OPEN.top().child.size() == 0)
 			make_nodes(&OPEN.top());
 		OPEN.top().evalue = hamming(OPEN.top(), goal);
 		if (OPEN.top().evalue < 8) {	//hamming의 결과 point가 8보다 작으면(goal과 일치하지 않으면) 다음노드를 OPEN에 push
-			if (OPEN.size() < 6) {	//깊이를 5로 제한한다.
+			if (OPEN.size() < 15) {	//깊이를 5로 제한한다.
 				OPEN.push(OPEN.top().child.front());
 			}else {
 				do {
 					OPEN.top().parent->child.pop_front(); //스택에 push한 노드는 child리스트에서 제거한다.
 					OPEN.pop();	//깊이가 5에 도달하면 스택을 pop한다
-				} while (OPEN.top().child.size() == 0);
+				} while (OPEN.top().child.size() == 0 && OPEN.size() > 1);
 			}
 		}
 		else {	//정답을 찾을경우
@@ -204,8 +204,10 @@ void DFS(puzzle start, puzzle goal) {
 			print_answer(sol);
 			return;
 		}
-	}while (OPEN.size() > 0 && start.child.size() > 0);
-	cout << "답을 찾지 못하였습니다. 걸린시간 : " << end_t - start_t  << " 초"<< endl;
+	}while (OPEN.size() > 0 && !((hamming(OPEN.top(), start) > 8) && (OPEN.top().child.size() == 0)));
+	//&& !( (hamming(OPEN.top(),start) > 8) && (OPEN.top().child.size() == 0) ) 
+	end_t = clock();
+	cout << "답을 찾지 못하였습니다. 걸린시간 : " << (float)(end_t - start_t) / (CLOCKS_PER_SEC) << " 초"<< endl;
 }
 
 //너비우선 탐색
@@ -321,7 +323,7 @@ void BestFirstSearch(puzzle start, puzzle goal, int ef(puzzle a, puzzle b)) {
 	}
 }
 
-bool Astar_pred(puzzle a, puzzle b) { return  a.evalue - a.dist < b.evalue - b.dist ? true : false; }	//노드->목표 까지의 예상경로비용 - 루트->노드 까지의 경로비용 순으로 정렬 
+bool Astar_pred(puzzle a, puzzle b) { return  (a.evalue - a.dist) > (b.evalue - b.dist) ? true : false; }	//노드->목표 까지의 예상경로비용 - 루트->노드 까지의 경로비용 순으로 정렬 
 
 void reset_dist(puzzle *a){		//입력받은 노드의 자식노드들의 dist를 입력받은 노드의 dist를 기준으로 재설정한다
 	if(a->child.size()){
@@ -344,12 +346,12 @@ void AStar(puzzle start, puzzle goal, int ef(puzzle a, puzzle b)) {
 
 	while (OPEN.size() > 0) {
 		end_t = clock();
-		CLOSE.push_back(OPEN.back());
+		CLOSE.push_back(OPEN.front());
 		make_nodes(&CLOSE.back());
-		OPEN.pop_back();
+		OPEN.pop_front();
 		if (CLOSE.back().child.size() > 0) {	//CLOSE에 들어간 원소에 child가 존재하면
-			list<puzzle>::iterator it;
-			for (it = CLOSE.back().child.begin(); it != CLOSE.back().child.end(); it++) {	//각 child의 평가함수점수를 구한다
+			list<puzzle>::iterator it = CLOSE.back().child.begin();
+			while (it != CLOSE.back().child.end()) {	//각 child의 평가함수점수를 구한다
 				it->evalue = ef(*it, goal);		//평가함수의 점수를 저장함
 				if (it->evalue >= 8) {			//평가함수의 점수가 8이상이면 정답					
 					vector<puzzle> sol;
@@ -362,34 +364,42 @@ void AStar(puzzle start, puzzle goal, int ef(puzzle a, puzzle b)) {
 					print_answer(sol);
 					return;
 				}
-			}
-			for (it = CLOSE.back().child.begin(); it != CLOSE.back().child.end(); it++) {		//child들을 OPEN에 삽입
-				for (list<puzzle>::iterator oit = OPEN.begin(); oit != OPEN.end(); oit++) {		//OPEN에 중복되는 노드가 있는지 검사
+				list<puzzle>::iterator oit = OPEN.begin();
+				while ( oit != OPEN.end() && it != CLOSE.back().child.end()) {		//OPEN에 중복되는 노드가 있는지 검사
+					
 					if (hamming(*it, *oit) >= 8) {		//중복되는 경우가 있다면
-						if (it->evalue - it->dist > oit->evalue - oit->dist) 	//child의 g() + h()가 더 큰경우에는 OPEN에 있는 중복노드를삭제
-							OPEN.erase(oit--);						
-						else												//그외의 경우에는 child에 있는 중복노드를 삭제
-							CLOSE.back().child.erase(it--);						
+						if (it->evalue - it->dist > oit->evalue - oit->dist) { 	//child의 g() + h()가 더 큰경우에는 OPEN에 있는 중복노드를삭제
+							oit = OPEN.erase(oit);							
+						}
+						else {												//그외의 경우에는 child에 있는 중복노드를 삭제
+							it = CLOSE.back().child.erase(it);
+						}
 					}
+					else
+						oit++;
 				}
-				for (list<puzzle>::iterator cit = CLOSE.begin(); cit != CLOSE.end(); cit++) {		//CLOSE에 중복되는 노드가 있는지 검사
+
+				list<puzzle>::iterator cit = CLOSE.begin();
+				while ( cit != CLOSE.end() && it != CLOSE.back().child.end()) {		//CLOSE에 중복되는 노드가 있는지 검사
 					if (hamming(*it, *cit) >= 8) {		//중복되는 경우가 있다면
 						if (it->evalue - it->dist > cit->evalue - cit->dist) {	//child의 g() + h()가 더 큰경우에는 CLOSE에 있는 중복노드를삭제
 							*cit->parent = *it->parent;
 							cit->dist = it->dist;
 							reset_dist(&*cit);
-							CLOSE.back().child.erase(it--);
-						}else {													//그외의 경우에는 child에 있는 중복노드를 삭제
-							CLOSE.back().child.erase(it--);
+							it = CLOSE.back().child.erase(it);								
+						}
+						else {													//그외의 경우에는 child에 있는 중복노드를 삭제
+							it = CLOSE.back().child.erase(it);
+							
 						}
 					}
-
+					cit++;
 				}
-				OPEN.push_back(*it);
+				if (it != CLOSE.back().child.end()) { OPEN.push_back(*it); it++; }
+				OPEN.sort(Astar_pred);	//OPEN을 정렬하여 g() + h()의 값이 가장 큰노드를 마지막으로 둔다
 			}
-			
 		}
-		OPEN.sort(Astar_pred);	//OPEN을 정렬하여 g() + h()의 값이 가장 큰노드를 마지막으로 둔다
+		
 	}
 
 }
@@ -424,10 +434,10 @@ int main(int argc, char* argv[])
 	start.dist = 0;
 
 	DFS(start, goal);
-	//BFS(start, goal);
-	//HillClimbing(start, goal, hamming);
-	//BestFirstSearch(start, goal, hamming);
-	//AStar(start, goal, hamming);
+	BFS(start, goal);
+	HillClimbing(start, goal, hamming);
+	BestFirstSearch(start, goal, hamming);
+	AStar(start, goal, hamming);
 
 	fclose(in);
 	fclose(g);
